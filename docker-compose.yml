@@ -268,10 +268,10 @@ services:
       dockerfile: Dockerfile.monitor
     container_name: taaf_nextcloud_monitor
     environment:
-      - WATCH_PATH=/nextcloud-data/admin/files/Documents-RH
+      - WATCH_PATH=/var/www/html/data/admin/files/Documents-RH
       - MATTERMOST_WEBHOOK_URL=http://mattermost:8065/hooks/zgq58agzebnyxp78xsgyfb9p8a
     volumes:
-      - ./data/nextcloud/data:/nextcloud-data:ro
+      - ./data/nextcloud/data:/var/www/html/data:rw
     networks:
       - taaf_network
     restart: unless-stopped
