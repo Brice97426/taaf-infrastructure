@@ -1,0 +1,14 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Installer les dépendances
+RUN pip install --no-cache-dir requests watchdog
+
+# Copier le script
+COPY nextcloud-monitor.py .
+
+# Rendre le script exécutable
+RUN chmod +x nextcloud-monitor.py
+
+CMD ["python", "-u", "nextcloud-monitor.py"]

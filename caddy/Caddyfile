@@ -1,0 +1,82 @@
+# ==========================================
+# Configuration globale
+# ==========================================
+{
+    auto_https off
+    log {
+        output file /data/logs/caddy-global.log
+    }
+}
+
+# ==========================================
+# GITLAB
+# ==========================================
+http://git.taaf.internal {
+    reverse_proxy gitlab:80
+
+    log {
+        output file /data/logs/gitlab-access.log
+    }
+}
+
+# ==========================================
+# NEXTCLOUD
+# ==========================================
+http://cloud.taaf.internal {
+    reverse_proxy nextcloud:80 {
+        transport http {
+            read_timeout 300s
+            write_timeout 300s
+        }
+    }
+
+    log {
+        output file /data/logs/nextcloud-access.log
+    }
+}
+
+# ==========================================
+# MATTERMOST
+# ==========================================
+http://chat.taaf.internal {
+    reverse_proxy mattermost:8065 {
+        transport http {
+            read_timeout 300s
+            write_timeout 300s
+        }
+    }
+
+    log {
+        output file /data/logs/mattermost-access.log
+    }
+}
+
+# ==========================================
+# KEYCLOAK
+# ==========================================
+http://keycloak.taaf.internal:8080 {
+    reverse_proxy taaf_keycloak:8080 {
+        transport http {
+            read_timeout 300s
+            write_timeout 300s
+        }
+    }
+
+    log {
+        output file /data/logs/keycloak-access.log
+    }
+}
+
+# ==========================================
+# PORTAIL CENTRAL (sur taaf.internal)
+# ==========================================
+http://taaf.internal {
+    root * /srv/portal
+    file_server {
+        index portal.html
+    }
+
+    header {
+        Content-Type "text/html; charset=utf-8"
+    }
+}

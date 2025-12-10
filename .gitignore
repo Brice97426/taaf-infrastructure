@@ -1,0 +1,23 @@
+# Données des services
+data/
+
+# Fichiers de configuration sensibles
+*.env
+.env.*
+
+# Logs
+*.log
+
+# Fichiers temporaires
+*.tmp
+*.swp
+*~
+
+# Certificats SSL
+*.pem
+*.key
+*.crt
+
+# Sauvegardes
+*.backup
+backups/

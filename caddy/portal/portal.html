@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAAF - Portail de Collaboration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 50px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #2d3748;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #718096;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .services {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .service-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-decoration: none;
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-align: center;
+            display: block;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .service-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .service-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .service-desc {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #718096;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🐧 TAAF</h1>
+        <p class="subtitle">Terres Australes et Antarctiques Françaises</p>
+        <div class="services">
+            <a href="http://git.taaf.internal" class="service-card">
+                <div class="service-icon">📦</div>
+                <div class="service-name">GitLab</div>
+                <div class="service-desc">Gestion de code source</div>
+            </a>
+            <a href="http://cloud.taaf.internal" class="service-card">
+                <div class="service-icon">☁️</div>
+                <div class="service-name">Nextcloud</div>
+                <div class="service-desc">Stockage cloud</div>
+            </a>
+            <a href="http://chat.taaf.internal" class="service-card">
+                <div class="service-icon">💬</div>
+                <div class="service-name">Mattermost</div>
+                <div class="service-desc">Communication</div>
+            </a>
+            <a href="http://keycloak.taaf.internal:8080" class="service-card">
+                <div class="service-icon">🔐</div>
+                <div class="service-name">Keycloak</div>
+                <div class="service-desc">Authentification</div>
+            </a>
+        </div>
+        <div class="footer">
+            <p>Infrastructure TAAF v1.0.0</p>
+        </div>
+    </div>
+</body>
+
+</html>
