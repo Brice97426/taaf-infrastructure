@@ -918,27 +918,6 @@ ping git.taaf.internal
 # chrome://net-internals/#dns -> Clear host cache
 ```
 
----
-
-## 📸 Liste des Screenshots Requis
-
-Assurez-vous de capturer ces screenshots et de les placer dans `docs/assets/screenshots/` :
-
-1. **01-taaf-home.png** - Page d'accueil http://taaf.internal
-2. **02-gitlab-login.png** - Page de connexion GitLab
-3. **03-nextcloud-login.png** - Page de connexion Nextcloud
-4. **04-mattermost-login.png** - Page de connexion Mattermost
-5. **05-gitlab-dashboard.png** - Dashboard GitLab après connexion
-6. **06-nextcloud-dashboard.png** - Dashboard Nextcloud après connexion
-7. **07-mattermost-welcome.png** - Écran de bienvenue Mattermost
-8. **08-mattermost-team.png** - Équipe TAAF avec canaux créés
-
-**Bonus (optionnels mais recommandés) :**
-- **09-docker-compose-ps.png** - Sortie de `docker compose ps`
-- **10-docker-stats.png** - Utilisation des ressources
-
----
-
 ## ➡️ Prochaine Étape
 
 Une fois tous les services déployés et accessibles, vous êtes prêt pour :
