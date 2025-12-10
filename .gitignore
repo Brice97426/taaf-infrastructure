@@ -1,23 +1,50 @@
-# Données des services
-data/
+# ==========================================
+# Données persistantes sensibles
+# ==========================================
+data/gitlab/
+data/nextcloud/
+data/mattermost/
+data/postgres/
+data/mysql/
+data/caddy/
 
+# Garder uniquement la structure
+!data/.gitkeep
+!data/*/.gitkeep
+
+# ==========================================
 # Fichiers de configuration sensibles
+# ==========================================
+.env
 *.env
 .env.*
-
-# Logs
-*.log
-
-# Fichiers temporaires
-*.tmp
-*.swp
-*~
-
-# Certificats SSL
-*.pem
+secrets/
 *.key
+*.pem
 *.crt
 
-# Sauvegardes
+# ==========================================
+# Logs et fichiers temporaires
+# ==========================================
+*.log
+logs/
+*.tmp
+*.temp
+
+# ==========================================
+# OS et éditeurs
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==========================================
+# Backup
+# ==========================================
+*.bak
 *.backup
-backups/
+backup/
