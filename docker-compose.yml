@@ -1,29 +1,49 @@
+# ==============================================================================
+# DOCKER COMPOSE - PLATEFORME TAAF
+# ==============================================================================
+# Stack complète pour la gestion collaborative TAAF incluant :
+# - GitLab (gestion de code source)
+# - Nextcloud (stockage et partage de fichiers)
+# - Mattermost (messagerie d'équipe)
+# - Keycloak (authentification centralisée)
+# - Caddy (reverse proxy)
+# - PostgreSQL (base de données partagée)
+# ==============================================================================
 services:
   # ==========================================
-  # POSTGRESQL 16
+  # POSTGRESQL 16 - Base de données principale
   # ==========================================
+  # Base de données PostgreSQL partagée entre GitLab et Keycloak
+  # Utilise un script d'initialisation pour créer plusieurs bases
   postgres:
     image: postgres:16-alpine
     container_name: taaf_postgres
     restart: unless-stopped
     environment:
+      # Identifiants de connexion PostgreSQL
       POSTGRES_USER: taaf_user
       POSTGRES_PASSWORD: taaf_secure_password_2024
+      # Base par défaut (GitLab)
       POSTGRES_DB: gitlab
     volumes:
+      # Persistance des données PostgreSQL
       - ./data/postgres:/var/lib/postgresql/data
+      # Script d'initialisation pour créer les bases multiples (gitlab + keycloak)
       - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
     networks:
       - taaf_network
     healthcheck:
+      # Vérifie que PostgreSQL répond correctement
       test: ["CMD-SHELL", "pg_isready -U taaf_user"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # ==========================================
-  # GITLAB
+  # GITLAB - Gestion de code source
   # ==========================================
+  # Plateforme GitLab Community Edition pour le versioning de code
+  # Connectée à PostgreSQL externe (pas de base embarquée)
   gitlab:
     image: gitlab/gitlab-ce:latest
     container_name: taaf_gitlab
@@ -32,6 +52,10 @@ services:
     depends_on:
       - postgres
     environment:
+      # === Configuration PostgreSQL externe ===
+      # Désactive PostgreSQL embarqué
+      # Désactive Prometheus pour économiser les ressources
+      # === Configuration Nginx interne ===
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'http://git.taaf.internal'
         gitlab_rails['initial_root_password'] = 'TAAFAdmin2024!'
@@ -50,23 +74,30 @@ services:
         nginx['listen_port'] = 80
         nginx['listen_https'] = false
     ports:
+      # Port SSH pour les opérations Git (clone, push, pull)
       - "2222:22"
     volumes:
+      # Configuration GitLab
       - ./data/gitlab/config:/etc/gitlab
+      # Données GitLab (repos, uploads, etc.)
       - ./data/gitlab/data:/var/opt/gitlab
+      # Logs GitLab
       - ./data/gitlab/logs:/var/log/gitlab
     networks:
       - taaf_network
     healthcheck:
+      # Endpoint de santé GitLab
       test: ["CMD", "curl", "-f", "http://localhost/-/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      # GitLab met du temps à démarrer (5 minutes)
       start_period: 300s
 
   # ==========================================
-  # NEXTCLOUD
+  # NEXTCLOUD - Stockage et partage de fichiers
   # ==========================================
+  # --- Base de données dédiée Nextcloud ---
   nextcloud_db:
     image: postgres:15-alpine
     container_name: taaf_nextcloud_db
@@ -76,10 +107,11 @@ services:
       POSTGRES_PASSWORD: nextcloud_secure_2024
       POSTGRES_DB: nextcloud
     volumes:
+      # Persistance des données PostgreSQL Nextcloud
       - ./data/nextcloud/db:/var/lib/postgresql/data
     networks:
       - taaf_network
-
+  # --- Application Nextcloud ---
   nextcloud:
     image: nextcloud:latest
     container_name: taaf_nextcloud
@@ -87,22 +119,28 @@ services:
     depends_on:
       - nextcloud_db
     environment:
+      # Configuration base de données
       POSTGRES_HOST: nextcloud_db
       POSTGRES_DB: nextcloud
       POSTGRES_USER: nextcloud_user
       POSTGRES_PASSWORD: nextcloud_secure_2024
+      # Compte administrateur Nextcloud
       NEXTCLOUD_ADMIN_USER: admin
       NEXTCLOUD_ADMIN_PASSWORD: TAAFCloud2024!
       NEXTCLOUD_TRUSTED_DOMAINS: cloud.taaf.internal
       OVERWRITEPROTOCOL: http
       OVERWRITEHOST: cloud.taaf.internal
     volumes:
+      # Application Nextcloud
       - ./data/nextcloud/html:/var/www/html
+      # Données utilisateurs
       - ./data/nextcloud/data:/var/www/html/data
+      # Configuration (commentée car gérée automatiquement)
       #- ./data/nextcloud/config:/var/www/html/config
     networks:
       - taaf_network
     healthcheck:
+      # Vérifie l'état de Nextcloud
       test: ["CMD", "curl", "-f", "http://localhost/status.php"]
       interval: 30s
       timeout: 10s
@@ -110,8 +148,9 @@ services:
 
 
   # ==========================================
-  # MATTERMOST
+  # MATTERMOST - Messagerie d'équipe
   # ==========================================
+  # --- Base de données dédiée Mattermost ---
   mattermost_db:
     image: postgres:15-alpine
     container_name: taaf_mattermost_db
@@ -121,6 +160,7 @@ services:
       POSTGRES_USER: mattermost_user
       POSTGRES_PASSWORD: mattermost_secure_2024
     volumes:
+      # Persistance des données PostgreSQL Mattermost
       - ./data/mattermost/db:/var/lib/postgresql/data
     networks:
       - taaf_network
@@ -129,7 +169,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
+  # --- Application Mattermost ---
   mattermost:
     image: mattermost/mattermost-team-edition:latest
     container_name: taaf_mattermost
@@ -138,8 +178,10 @@ services:
       mattermost_db:
         condition: service_healthy
     environment:
+      # === Configuration base de données ===
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mattermost_user:mattermost_secure_2024@mattermost_db:5432/mattermost?sslmode=disable&connect_timeout=10
+      # === Configuration serveur ===
       MM_SERVICESETTINGS_SITEURL: http://chat.taaf.internal
       MM_SERVICESETTINGS_ENABLELOCALMODE: "true"
       TZ: Indian/Reunion
@@ -156,18 +198,26 @@ services:
       MM_EMAILSETTINGS_SMTPSERVER: mailhog
       MM_EMAILSETTINGS_SMTPPORT: "1025"
       MM_EMAILSETTINGS_SENDERADDRESS: "noreply@taaf.internal"
+      # Active les emails de réinitialisation de mot de passe
       MM_EMAILSETTINGS_SENDPASSWORDRESETEMAIL: "true"
+      # Notifie les changements de propriétés
       MM_EMAILSETTINGS_NOTIFYPROPERTIESCHANGED: "true"
 
     volumes:
+      # Configuration Mattermost
       - ./data/mattermost/config:/mattermost/config
+      # Données Mattermost (uploads, etc.)
       - ./data/mattermost/data:/mattermost/data
+      # Logs Mattermost
       - ./data/mattermost/logs:/mattermost/logs
+      # Plugins serveur
       - ./data/mattermost/plugins:/mattermost/plugins
+      # Plugins client
       - ./data/mattermost/client-plugins:/mattermost/client/plugins
     networks:
       - taaf_network
     healthcheck:
+      # Vérifie que l'API Mattermost répond
       test: ["CMD", "curl", "-f", "http://localhost:8065/api/v4/system/ping"]
       interval: 30s
       timeout: 10s
@@ -177,6 +227,8 @@ services:
   # ==========================================
   # MAILHOG (SMTP pour Mattermost)
   # ==========================================
+  # Capture tous les emails envoyés par Mattermost pour tests/développement
+  # Interface web accessible sur port 8025
   mailhog:
     image: mailhog/mailhog
     container_name: taaf_mailhog
@@ -190,53 +242,75 @@ services:
   # ==========================================
   # KEYCLOAK
   # ==========================================
+  # Serveur d'identité pour gérer l'authentification unique (Single Sign-On)
+  # Utilise PostgreSQL partagé avec GitLab
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: taaf_keycloak
     restart: unless-stopped
+    # Mode développement (à remplacer par 'start' en production)
     command: start-dev
     environment:
+      # === Compte administrateur Keycloak ===
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: TAAFKeycloak2024!
+      # === Configuration PostgreSQL ===
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://taaf_postgres:5432/keycloak
       KC_DB_USERNAME: taaf_user
       KC_DB_PASSWORD: taaf_secure_password_2024
+      # === Configuration réseau ===
+      # IP du serveur hôte
       KC_HOSTNAME: 192.168.50.139
       KC_HOSTNAME_PORT: 8080
       KC_HOSTNAME_STRICT: "false"
+      # Active HTTP (à remplacer par HTTPS en production)
       KC_HTTP_ENABLED: "true"
+      # Mode proxy edge (Caddy devant)
       KC_PROXY: edge
     ports:
+      # Port HTTP Keycloak
       - "8080:8080"
+      # Port HTTPS Keycloak
       - "8443:8443"
     volumes:
+      # Données Keycloak (thèmes, configurations)
       - ./data/keycloak:/opt/keycloak/data
     networks:
       - taaf_network
     depends_on:
       - postgres
     healthcheck:
+      # Vérifie que Keycloak est prêt
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
       interval: 30s
       timeout: 10s
       retries: 5
+      # Keycloak met 90s à démarrer
       start_period: 90s
 
   # ==========================================
   # CADDY
   # ==========================================
+  # Serveur web et reverse proxy pour router les requêtes vers les services
+  # Gère automatiquement HTTPS avec Let's Encrypt (si configuré)
   caddy:
     image: caddy:2-alpine
     container_name: taaf_caddy
     restart: unless-stopped
     ports:
+      # Port HTTP
       - "80:80"
+      # Port HTTPS
       - "443:443"
     volumes:
+      # Configuration Caddy (routage des domaines)
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      # Données Caddy (certificats SSL)
       - ./data/caddy/data:/data
+      # Configuration runtime Caddy
       - ./data/caddy/config:/config
+      # Portail web personnalisé
       - ./caddy/portal:/srv/portal
     networks:
       - taaf_network
@@ -245,32 +319,46 @@ services:
       - nextcloud
       - mattermost
     healthcheck:
+      # Vérifie que Caddy fonctionne
       test: ["CMD", "caddy", "version"]
       interval: 30s
       timeout: 10s
       retries: 3
-  # Webhook GitLab vers Mattermost
+  
+  # ==========================================
+  # WEBHOOKS - Intégrations GitLab → Mattermost
+  # ==========================================
+  # Service qui reçoit les webhooks GitLab et les transmet à Mattermost
+  # Permet de notifier l'équipe des push, merge requests, etc.
   gitlab-webhook:
     build:
       context: ./scripts/webhooks
       dockerfile: Dockerfile
     container_name: taaf_gitlab_webhook
     environment:
+      # URL du webhook Mattermost (canal de destination)
       - MATTERMOST_WEBHOOK_URL=http://mattermost:8065/hooks/8jomgg6xy3gkzn9btb1y6oanhc
     networks:
       - taaf_network
     restart: unless-stopped
 
-  # Monitoring Nextcloud vers Mattermost
+  # ==========================================
+  # MONITORING - Surveillance Nextcloud → Mattermost
+  # ==========================================
+  # Service qui surveille un dossier Nextcloud et notifie sur Mattermost
+  # Utile pour suivre les modifications de documents RH
   nextcloud-monitor:
     build:
       context: ./scripts/webhooks
       dockerfile: Dockerfile.monitor
     container_name: taaf_nextcloud_monitor
     environment:
+      # Dossier à surveiller dans Nextcloud
       - WATCH_PATH=/var/www/html/data/admin/files/Documents-RH
+      # URL du webhook Mattermost (canal RH)
       - MATTERMOST_WEBHOOK_URL=http://mattermost:8065/hooks/zgq58agzebnyxp78xsgyfb9p8a
     volumes:
+      # Accès en lecture et en écriture aux données Nextcloud
       - ./data/nextcloud/data:/var/www/html/data:rw
     networks:
       - taaf_network
@@ -279,11 +367,13 @@ services:
       - nextcloud
       - mattermost
 # ==========================================
-# RÉSEAU
+# RÉSEAU DOCKER
 # ==========================================
+# Réseau bridge personnalisé pour isoler les services TAAF
 networks:
   taaf_network:
     driver: bridge
     ipam:
       config:
+        # Sous-réseau dédié pour éviter les conflits
         - subnet: 172.20.0.0/16
