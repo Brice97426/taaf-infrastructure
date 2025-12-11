@@ -1,81 +1,124 @@
+# ==============================================================================
+# CADDYFILE - REVERSE PROXY TAAF
+# ==============================================================================
+# Configuration Caddy pour router les requêtes vers les différents services
+# de la plateforme TAAF via des sous-domaines internes
+# ==============================================================================
+
 # ==========================================
 # Configuration globale
 # ==========================================
+# Options qui s'appliquent à tous les sites
 {
+    # Désactive HTTPS automatique (environnement interne)
+    # En production externe, retirer cette ligne pour activer Let's Encrypt
     auto_https off
+    # Configuration des logs globaux
     log {
+        # Fichier de log central pour tous les événements Caddy
         output file /data/logs/caddy-global.log
     }
 }
 
 # ==========================================
-# GITLAB
+# GITLAB - Gestion de code source
 # ==========================================
+# Accessible via : http://git.taaf.internal
+# Proxifie vers le service GitLab (port 80 interne)
 http://git.taaf.internal {
+    # Redirige toutes les requêtes vers le conteneur GitLab
     reverse_proxy gitlab:80
 
+    # Logs d'accès spécifiques à GitLab
     log {
         output file /data/logs/gitlab-access.log
     }
 }
 
 # ==========================================
-# NEXTCLOUD
+# NEXTCLOUD - Stockage et partage de fichiers
 # ==========================================
+# Accessible via : http://cloud.taaf.internal
+# Proxifie vers le service Nextcloud (port 80 interne)
 http://cloud.taaf.internal {
     reverse_proxy nextcloud:80 {
+        # Configuration du transport HTTP
         transport http {
+            # Timeout lecture étendu pour les gros fichiers
+            # Nécessaire pour l'upload/download de fichiers volumineux
             read_timeout 300s
+            # Timeout écriture étendu pour les gros fichiers
             write_timeout 300s
         }
     }
-
+    # Logs d'accès spécifiques à Nextcloud
     log {
         output file /data/logs/nextcloud-access.log
     }
 }
 
 # ==========================================
-# MATTERMOST
+# MATTERMOST - Messagerie d'équipe
 # ==========================================
+# Accessible via : http://chat.taaf.internal
+# Proxifie vers le service Mattermost (port 8065 interne)
 http://chat.taaf.internal {
     reverse_proxy mattermost:8065 {
+        # Configuration du transport HTTP
         transport http {
+            # Timeout lecture étendu pour les WebSockets
+            # Nécessaire pour maintenir les connexions temps réel
             read_timeout 300s
+            # Timeout écriture étendu pour les WebSockets
             write_timeout 300s
         }
     }
-
+    # Logs d'accès spécifiques à Mattermost
     log {
         output file /data/logs/mattermost-access.log
     }
 }
 
 # ==========================================
-# KEYCLOAK
+# KEYCLOAK - Authentification centralisée (SSO)
 # ==========================================
+# Accessible via : http://keycloak.taaf.internal:8080
+# Proxifie vers le service Keycloak (port 8080 interne)
+# Note : Le port 8080 est inclus dans l'URL pour éviter les conflits
 http://keycloak.taaf.internal:8080 {
+    # Redirige vers le conteneur Keycloak
+    # Utilise le nom du conteneur (taaf_keycloak) au lieu du nom de service
     reverse_proxy taaf_keycloak:8080 {
+        # Configuration du transport HTTP
         transport http {
+            # Timeout lecture étendu pour les opérations d'authentification
             read_timeout 300s
+            # Timeout écriture étendu
             write_timeout 300s
         }
     }
-
+    # Logs d'accès spécifiques à Keycloak
     log {
         output file /data/logs/keycloak-access.log
     }
 }
 
 # ==========================================
-# PORTAIL CENTRAL (sur taaf.internal)
+# PORTAIL CENTRAL - Page d'accueil TAAF
 # ==========================================
+# Accessible via : http://taaf.internal (domaine racine)
+# Sert le portail HTML statique listant tous les services
 http://taaf.internal {
+    # Répertoire racine contenant les fichiers du portail
     root * /srv/portal
+
+    # Active le serveur de fichiers statiques
     file_server {
+        # Page d'accueil par défaut
         index portal.html
     }
 
+    # En-têtes HTTP personnalisés
     header {
         Content-Type "text/html; charset=utf-8"
     }
